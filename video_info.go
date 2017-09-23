@@ -14,9 +14,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"log"
 
 	"github.com/PuerkitoBio/goquery"
-	log "github.com/Sirupsen/logrus"
 )
 
 const youtubeBaseURL = "https://www.youtube.com/watch"
@@ -152,13 +152,13 @@ func getVideoInfoFromHTML(id string, html []byte) (*VideoInfo, error) {
 	info.ID = id
 	dateStr, ok := doc.Find("meta[itemprop=\"datePublished\"]").Attr("content")
 	if !ok {
-		log.Debug("Unable to extract date published")
+		log.Println("Unable to extract date published")
 	} else {
 		date, err := time.Parse(youtubeDateFormat, dateStr)
 		if err == nil {
 			info.DatePublished = date
 		} else {
-			log.Debug("Unable to parse date published", err.Error())
+			log.Println("Unable to parse date published", err.Error())
 		}
 	}
 
@@ -172,7 +172,7 @@ func getVideoInfoFromHTML(id string, html []byte) (*VideoInfo, error) {
 			return nil, err
 		}
 	} else {
-		log.Debug("Unable to extract json from default url, trying embedded url")
+		log.Println("Unable to extract json from default url, trying embedded url")
 		var resp *http.Response
 		resp, err = http.Get(youtubeEmbededBaseURL + id)
 		if err != nil {
@@ -236,17 +236,17 @@ func getVideoInfoFromHTML(id string, html []byte) (*VideoInfo, error) {
 	if a, ok := inf["author"].(string); ok {
 		info.Author = a
 	} else {
-		log.Debug("Unable to extract author")
+		log.Println("Unable to extract author")
 	}
 
 	if length, ok := inf["length_seconds"].(string); ok {
 		if duration, err := strconv.ParseInt(length, 10, 64); err == nil {
 			info.Duration = time.Second * time.Duration(duration)
 		} else {
-			log.Debug("Unable to parse duration string: ", length)
+			log.Println("Unable to parse duration string: ", length)
 		}
 	} else {
-		log.Debug("Unable to extract duration")
+		log.Println("Unable to extract duration")
 	}
 
 	// For the future maybe
@@ -317,10 +317,10 @@ func getVideoInfoFromHTML(id string, html []byte) (*VideoInfo, error) {
 				}
 				formats = append(formats, format)
 			} else {
-				log.Debug("No metadata found for itag: ", itag, ", skipping...")
+				log.Println("No metadata found for itag: ", itag, ", skipping...")
 			}
 		} else {
-			log.Debug("Unable to format string", err.Error())
+			log.Println("Unable to format string", err.Error())
 		}
 	}
 
@@ -391,7 +391,7 @@ func getDashManifest(urlString string) (formats []Format, err error) {
 				}
 				formats = append(formats, format)
 			} else {
-				log.Debug("No metadata found for itag: ", rep.Itag, ", skipping...")
+				log.Println("No metadata found for itag: ", rep.Itag, ", skipping...")
 			}
 		}
 	}
