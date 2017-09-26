@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-	"log"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -24,6 +24,10 @@ const youtubeEmbededBaseURL = "https://www.youtube.com/embed/"
 const youtubeVideoEURL = "https://youtube.googleapis.com/v/"
 const youtubeVideoInfoURL = "https://www.youtube.com/get_video_info"
 const youtubeDateFormat = "2006-01-02"
+
+var regVideoId = regexp.MustCompile(`(?:v|embed|watch\?v)(?:=|/)([^"&?/=%]{11})`)
+var regVideoId2 = regexp.MustCompile(`(?:=|/)([^"&?/=%]{11})`)
+var regVideoId3 = regexp.MustCompile(`([^"&?/=%]{11})`)
 
 // VideoInfo contains the info a youtube video
 type VideoInfo struct {
@@ -66,9 +70,22 @@ func GetVideoInfo(value interface{}) (*VideoInfo, error) {
 	}
 }
 
+func findVideoID(rawUrl string) string {
+	var videoId string
+	reList := []*regexp.Regexp{regVideoId, regVideoId2, regVideoId3}
+	for _, re := range reList {
+		if isMatch := re.MatchString(rawUrl); isMatch {
+			subs := re.FindStringSubmatch(rawUrl)
+			videoId = subs[1]
+			break
+		}
+	}
+	return videoId
+}
+
 // GetVideoInfoFromURL fetches video info from a youtube url
 func GetVideoInfoFromURL(u *url.URL) (*VideoInfo, error) {
-	videoID := u.Query().Get("v")
+	videoID := findVideoID(u.String())
 	if len(videoID) == 0 {
 		return nil, fmt.Errorf("Invalid youtube url, no video id")
 	}
