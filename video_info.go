@@ -344,29 +344,30 @@ func getVideoInfoFromHTML(id string, html []byte) (*VideoInfo, error) {
 	if dashManifestURL, ok := inf["dashmpd"].(string); ok {
 		tokens, err := getSigTokens(info.htmlPlayerFile)
 		if err != nil {
-			return nil, fmt.Errorf("Unable to extract signature tokens: %s", err.Error())
-		}
-		regex := regexp.MustCompile("\\/s\\/([a-fA-F0-9\\.]+)")
-		regexSub := regexp.MustCompile("([a-fA-F0-9\\.]+)")
-		dashManifestURL = regex.ReplaceAllStringFunc(dashManifestURL, func(str string) string {
-			return "/signature/" + decipherTokens(tokens, regexSub.FindString(str))
-		})
-		dashFormats, err := getDashManifest(dashManifestURL)
-		if err != nil {
-			return nil, fmt.Errorf("Unable to extract dash manifest: %s", err.Error())
-		}
-
-		for _, dashFormat := range dashFormats {
-			added := false
-			for j, format := range formats {
-				if dashFormat.Itag == format.Itag {
-					formats[j] = dashFormat
-					added = true
-					break
+			log.Printf("Unable to extract signature tokens: %s", err.Error())
+		} else {
+			regex := regexp.MustCompile("\\/s\\/([a-fA-F0-9\\.]+)")
+			regexSub := regexp.MustCompile("([a-fA-F0-9\\.]+)")
+			dashManifestURL = regex.ReplaceAllStringFunc(dashManifestURL, func(str string) string {
+				return "/signature/" + decipherTokens(tokens, regexSub.FindString(str))
+			})
+			dashFormats, err := getDashManifest(dashManifestURL)
+			if err != nil {
+				log.Printf("Unable to extract dash manifest: %s", err.Error())
+			} else {
+				for _, dashFormat := range dashFormats {
+					added := false
+					for j, format := range formats {
+						if dashFormat.Itag == format.Itag {
+							formats[j] = dashFormat
+							added = true
+							break
+						}
+					}
+					if !added {
+						formats = append(formats, dashFormat)
+					}
 				}
-			}
-			if !added {
-				formats = append(formats, dashFormat)
 			}
 		}
 	}
